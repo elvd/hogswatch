@@ -47,12 +47,11 @@
 #define CDHTPIN A3
 #define RDHTPIN A5
 
-// Raspberry Pi TX time intervals
+// Raspberry Pi TX time intervals, in ms
 #define TXREVS 60000
 #define TXTEMP 60000
-
-// Reset number of revolutions every day
-#define RESETPERIOD 86400000
+#define TXHUMD 60000
+#define TXOFFSET 20000 // for ThingSpeak updates
 
 // Update LCD display every second.
 #define UPDATEPERIOD 1000
@@ -61,7 +60,7 @@
 int c_flag1 = 0, c_flag2 = 0, r_flag1 = 0, r_flag2 = 0;
 int hall_value1, hall_value2;
 unsigned long c_revolutions = 0, r_revolutions = 0;
-unsigned long timer_revs = 0, timer_temp = 0, timer_start = 0, timer_update = 0;
+unsigned long timer_revs = 0, timer_temp = 0, timer_update = 0, timer_humidity = 0;
 float temp = 0.0, humidity = 0.0;
 
 // initialise the separate components/libraries
@@ -91,8 +90,8 @@ void setup() {
 
 // Get current time
   timer_temp = millis();
-  timer_revs = millis();
-  timer_start = millis();
+  timer_humidity = millis() + TXOFFSET;
+  timer_revs = millis() + 2*TXOFFSET;
   timer_update = millis();
 }
 
@@ -101,53 +100,49 @@ void loop() {
   if ((millis() - timer_revs) >= TXREVS) { // send number of revolutions to RPi
     pi_port.print("caesar:dist:");
     pi_port.println(c_revolutions);
+    //    Serial.print("caesar:dist:");
+    //    Serial.println(c_revolutions);
 
     pi_port.print("ritz:dist:");
     pi_port.println(r_revolutions);
+    //    Serial.print("ritz:dist:");
+    //    Serial.println(r_revolutions);
 
-//    Serial.print("caesar:dist:");
-//    Serial.println(c_revolutions);
-//
-//    Serial.print("ritz:dist:");
-//    Serial.println(r_revolutions);
-
+    c_revolutions = 0;
+    r_revolutions = 0;
     timer_revs = millis();
   }
 
-  if ((millis() - timer_temp) >= TXTEMP) { // send temp and humidity to RPi
+  if ((millis() - timer_temp) >= TXTEMP) { // send temperature to RPi
     temp = c_temp_sensor.readTemperature();
-    humidity = c_temp_sensor.readHumidity();
-
     pi_port.print("caesar:temp:");
     pi_port.println(temp);
-    pi_port.print("caesar:humidity:");
-    pi_port.println(humidity);
-
 //    Serial.print("caesar:temp:");
 //    Serial.println(temp);
-//    Serial.print("caesar:humidity:");
-//    Serial.println(humidity);
 
     temp = r_temp_sensor.readTemperature();
-    humidity = r_temp_sensor.readHumidity();
-
     pi_port.print("ritz:temp:");
     pi_port.println(temp);
-    pi_port.print("ritz:humidity:");
-    pi_port.println(humidity);
-
 //    Serial.print("ritz:temp:");
 //    Serial.println(temp);
-//    Serial.print("ritz:humidity:");
-//    Serial.println(humidity);
 
     timer_temp = millis();
   }
 
-  if ((millis() - timer_start) >= RESETPERIOD) {
-    c_revolutions = 0;
-    r_revolutions = 0;
-    timer_start = millis();
+  if ((millis() - timer_humidity) >= TXHUMD) { // send humidity to RPi
+    humidity = c_temp_sensor.readHumidity();
+    pi_port.print("caesar:humidity:");
+    pi_port.println(humidity);
+    //    Serial.print("caesar:humidity:");
+    //    Serial.println(humidity);
+
+    humidity = r_temp_sensor.readHumidity();
+    pi_port.print("ritz:humidity:");
+    pi_port.println(humidity);
+    //    Serial.print("ritz:humidity:");
+    //    Serial.println(humidity);
+
+    timer_humidity = millis();
   }
 
   if ((millis() - timer_update) >= UPDATEPERIOD) {
