@@ -28,6 +28,7 @@ import requests
 import logging
 import logging.handlers
 import sys
+import os
 from collections import namedtuple
 
 
@@ -41,7 +42,7 @@ arduino_port = '/dev/ttyAMA0'
 
 data = namedtuple('data', 'hedgehog param value')  # for better readability
 logfile_name = 'hogswatch.log'  # used by logging module
-config_name = 'hogswatch.json'  # holds usernames, passwords, API keys
+config_name = 'hogswatch_kate.json'  # holds usernames, passwords, API keys
 datafile_name = 'hogswatch.csv'  # until we move to sqlite
 
 input_port = None
@@ -87,7 +88,7 @@ def send_text(input_data):
     Uses bulksms.co.uk to send the text. Parameters for the HTTP POST request
     are read from the configuration JSON file.
     """
-    warning_msg = ' '.join(['Temperature out of bounds in ',
+    warning_msg = ' '.join(['Temperature out of bounds in',
                             input_data.hedgehog.upper(),
                             '\'s viv! Temperature is:',
                             str(input_data.value)])
@@ -174,6 +175,17 @@ while hogswatch_running:
         input_data = input_port.readline()
         input_data = input_data.strip().split(':')
         input_data = data(*input_data)
+
+        # check if shutdown command has been issued via button press
+        if input_data.hedgehog == 'command':
+            hogswatch_logger.info('Shutdown command received')
+            input_port.close()
+            hogswatch_logger.info('Serial port closed')
+            datafile.close()
+            hogswatch_logger.info('CSV file closed')
+            hogswatch_logger.info('Files and ports closed, terminating')
+            logging.shutdown()
+            os.system('sudo shutdown -h now')
 
         timestamp = datetime.datetime.now()
 

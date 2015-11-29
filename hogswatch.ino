@@ -19,7 +19,7 @@
 */
 
 #include <LiquidCrystal.h> // for debugging and testing purposes
-#include <SoftwareSerial.h> // RPi communication, using dumb serial mode
+// #include <SoftwareSerial.h> // RPi communication, using dumb serial mode
 #include "DHT.h" // Adafruit library for DHT22 sensor
 
 // LCD pins, with corresponding pins on LCD board
@@ -39,8 +39,11 @@
 #define RITZHALL2 3
 
 // Raspberry Pi communication serial pins
-#define PIRX A1
-#define PITX A0
+// #define PIRX A1
+// #define PITX A0
+
+// Raspberry Pi shutdown button
+#define PISHUTDOWN A1
 
 // DHT sensor configuration
 #define DHTTYPE DHT22
@@ -58,13 +61,13 @@
 
 // for detecting direction and number of revolutions
 int c_flag1 = 0, c_flag2 = 0, r_flag1 = 0, r_flag2 = 0;
-int hall_value1, hall_value2;
+int hall_value1, hall_value2, shutdown_button;
 unsigned long c_revolutions = 0, r_revolutions = 0;
 unsigned long timer_revs = 0, timer_temp = 0, timer_update = 0, timer_humidity = 0;
 float temp = 0.0, humidity = 0.0;
 
 // initialise the separate components/libraries
-SoftwareSerial pi_port(PIRX, PITX) ;
+// SoftwareSerial pi_port(PIRX, PITX) ;
 LiquidCrystal stat_disp(RS, E, D4, D5, D6, D7);
 DHT c_temp_sensor(CDHTPIN, DHTTYPE);
 DHT r_temp_sensor(RDHTPIN, DHTTYPE);
@@ -74,9 +77,10 @@ void setup() {
   pinMode(CAESARHALL2, INPUT);
   pinMode(RITZHALL1, INPUT);
   pinMode(RITZHALL2, INPUT);
+  pinMode(PISHUTDOWN, INPUT);
 
-  pi_port.begin(9600);
-//  Serial.begin(9600);
+//  pi_port.begin(9600);
+  Serial.begin(9600);
   c_temp_sensor.begin();
   r_temp_sensor.begin();
 
@@ -97,16 +101,22 @@ void setup() {
 
 void loop() {
 
-  if ((millis() - timer_revs) >= TXREVS) { // send number of revolutions to RPi
-    pi_port.print("caesar:dist:");
-    pi_port.println(c_revolutions);
-    //    Serial.print("caesar:dist:");
-    //    Serial.println(c_revolutions);
+  shutdown_button = digitalRead(PISHUTDOWN);
+  if (shutdown_button == HIGH) {
+    Serial.println("command:shutdown:now");
+    delay(60000);
+  }
 
-    pi_port.print("ritz:dist:");
-    pi_port.println(r_revolutions);
-    //    Serial.print("ritz:dist:");
-    //    Serial.println(r_revolutions);
+  if ((millis() - timer_revs) >= TXREVS) { // send number of revolutions to RPi
+//    pi_port.print("caesar:dist:");
+//    pi_port.println(c_revolutions);
+    Serial.print("caesar:dist:");
+    Serial.println(c_revolutions);
+
+//    pi_port.print("ritz:dist:");
+//    pi_port.println(r_revolutions);
+    Serial.print("ritz:dist:");
+    Serial.println(r_revolutions);
 
     c_revolutions = 0;
     r_revolutions = 0;
@@ -115,32 +125,32 @@ void loop() {
 
   if ((millis() - timer_temp) >= TXTEMP) { // send temperature to RPi
     temp = c_temp_sensor.readTemperature();
-    pi_port.print("caesar:temp:");
-    pi_port.println(temp);
-//    Serial.print("caesar:temp:");
-//    Serial.println(temp);
+//    pi_port.print("caesar:temp:");
+//    pi_port.println(temp);
+    Serial.print("caesar:temp:");
+    Serial.println(temp);
 
     temp = r_temp_sensor.readTemperature();
-    pi_port.print("ritz:temp:");
-    pi_port.println(temp);
-//    Serial.print("ritz:temp:");
-//    Serial.println(temp);
+//    pi_port.print("ritz:temp:");
+//    pi_port.println(temp);
+    Serial.print("ritz:temp:");
+    Serial.println(temp);
 
     timer_temp = millis();
   }
 
   if ((millis() - timer_humidity) >= TXHUMD) { // send humidity to RPi
     humidity = c_temp_sensor.readHumidity();
-    pi_port.print("caesar:humidity:");
-    pi_port.println(humidity);
-    //    Serial.print("caesar:humidity:");
-    //    Serial.println(humidity);
+//    pi_port.print("caesar:humidity:");
+//    pi_port.println(humidity);
+    Serial.print("caesar:humidity:");
+    Serial.println(humidity);
 
     humidity = r_temp_sensor.readHumidity();
-    pi_port.print("ritz:humidity:");
-    pi_port.println(humidity);
-    //    Serial.print("ritz:humidity:");
-    //    Serial.println(humidity);
+//    pi_port.print("ritz:humidity:");
+//    pi_port.println(humidity);
+    Serial.print("ritz:humidity:");
+    Serial.println(humidity);
 
     timer_humidity = millis();
   }
