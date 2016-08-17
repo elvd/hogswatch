@@ -59,6 +59,8 @@
 // Update LCD display every second.
 #define UPDATEPERIOD 1000
 
+#define SHUTDOWNDELAY 30000
+
 // for detecting direction and number of revolutions
 int c_flag1 = 0, c_flag2 = 0, r_flag1 = 0, r_flag2 = 0;
 int hall_value1, hall_value2, shutdown_button;
@@ -104,7 +106,15 @@ void loop() {
   shutdown_button = digitalRead(PISHUTDOWN);
   if (shutdown_button == HIGH) {
     Serial.println("command:shutdown:now");
-    delay(60000);
+    delay(SHUTDOWNDELAY)
+   
+    stat_disp.clear();
+    stat_disp.setCursor(0, 0);
+    stat_disp.print("IT IS NOW SAFE");
+    stat_disp.setCursor(0, 1);
+    stat_disp.print("TO SWITCH OFF")
+
+    for(;;) {} // halt
   }
 
   if ((millis() - timer_revs) >= TXREVS) { // send number of revolutions to RPi

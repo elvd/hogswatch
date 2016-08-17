@@ -49,6 +49,7 @@ input_port = None
 timestamp = None
 timestamp_sms = None
 feed_data = dict()
+channels = {'dist': 'field1', 'temp': 'field2', 'humidity': 'field3'}
 
 #  set up logger, following recipe in Logging Cookbook
 hogswatch_logger = logging.getLogger(name='hogswatch')
@@ -120,12 +121,14 @@ def publish_to_thingspeak(hedgehog_data):
     """
     feed_data['api_key'] = hogswatch_config[hedgehog_data.hedgehog]
 
-    if hedgehog_data.param == 'dist':
-        feed_data['field1'] = hedgehog_data.value
-    elif hedgehog_data.param == 'temp':
-        feed_data['field2'] = hedgehog_data.value
-    else:
-        feed_data['field3'] = hedgehog_data.value
+    feed_data[channels[hedgehog_data.param]] = hedgehog_data.value
+    
+    # if hedgehog_data.param == 'dist':
+    #     feed_data['field1'] = hedgehog_data.value
+    # elif hedgehog_data.param == 'temp':
+    #     feed_data['field2'] = hedgehog_data.value
+    # else:
+    #     feed_data['field3'] = hedgehog_data.value
 
     publish_response = requests.post(hogswatch_config['data_log_url'],
                                      data=feed_data)
